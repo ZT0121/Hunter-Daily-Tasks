@@ -66,6 +66,7 @@
   <div class="card">
     <div>任務歷史紀錄（最近 10 筆）</div>
     <ul id="historyList"></ul>
+    <button id="clearHistoryBtn" style="background:#b55">清除歷史</button>
   </div>
 
   <script>
@@ -111,6 +112,7 @@
     const rewardMsg = document.getElementById('rewardMsg');
     const redeemBtn = document.getElementById('redeemBtn');
     const historyListEl = document.getElementById('historyList');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
     function isSchoolDay(d){
       const day = d.getDay();
@@ -125,6 +127,15 @@
         delete a['next'];
         saveAssignments(a);
       }
+    }
+
+    function formatDateStr(dateStr){
+      const d = new Date(dateStr);
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      const week = ['日','一','二','三','四','五','六'][d.getDay()];
+      return `${y}-${m}-${day}（週${week}）`;
     }
 
     function render(){
@@ -151,7 +162,7 @@
       // 任務歷史紀錄（最近 10 筆）
       const keys = Object.keys(a).filter(k=>k!=='next').sort((x,y)=> new Date(x)-new Date(y));
       const recent = keys.slice(-10);
-      historyListEl.innerHTML = recent.map(k=>`<li>${k}：${a[k]}</li>`).join('');
+      historyListEl.innerHTML = recent.map(k=>`<li>${formatDateStr(k)}：${a[k]}</li>`).join('');
     }
 
     document.getElementById('drawBtn').onclick=()=>{
@@ -199,6 +210,17 @@
         render();
       } else {
         alert("目前沒有下一個任務可搬移");
+      }
+    };
+
+    clearHistoryBtn.onclick=()=>{
+      if(confirm("確定要清除歷史紀錄嗎？")){
+        const a = loadAssignments();
+        for(const k of Object.keys(a)){
+          if(k!=='next') delete a[k];
+        }
+        saveAssignments(a);
+        render();
       }
     };
 
