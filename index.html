@@ -7,8 +7,7 @@
   <style>
     body{
       margin:0; font-family:"Minecraftia", monospace, sans-serif;
-      background: #6db36d url("background.png") repeat;
-      background-size:64px 64px;
+      background:#6db36d url('https://i.ibb.co/kB3xYcx/mc-grass.png');
       color:#fff; text-align:center; padding:20px;
     }
     h1{ font-size:1.8rem; text-shadow:2px 2px #333; }
@@ -28,22 +27,8 @@
       background:#4caf50; height:100%; width:0%; transition:width .4s;
     }
     .xp-text{ position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:0.9rem; color:#fff; }
-    #rewardBtn{ background:#b76e79; margin-top:10px; }
-    #resetBtn{ background:#555; margin-top:10px; }
-    #resetAllBtn{ background:#c33; margin-top:10px; }
-
-    /* 動畫特效 */
-    .xp-float{
-      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
-      font-size:2rem; font-weight:bold; color:#0f0;
-      animation: floatUp 1s ease-out forwards;
-      pointer-events:none;
-      text-shadow:2px 2px #000;
-    }
-    @keyframes floatUp{
-      0%{opacity:1; transform:translate(-50%,-50%) scale(1);}
-      100%{opacity:0; transform:translate(-50%,-150%) scale(1.5);}
-    }
+    ul{ text-align:left; margin:10px auto; max-width:400px; }
+    li{ margin:4px 0; }
   </style>
 </head>
 <body>
@@ -70,9 +55,17 @@
       <div class="xp-text" id="xpText">0 / 5</div>
     </div>
     <div id="rewardMsg" style="margin-top:10px; color:#ff0; font-weight:bold"></div>
-    <button id="rewardBtn" style="display:none">兌換 Minecraft 時間 🎮</button>
-    <button id="resetBtn">清空積分</button>
-    <button id="resetAllBtn">清空所有資料</button>
+    <button id="redeemBtn" style="display:none; background:#d85">兌換 Minecraft 20 分鐘</button>
+  </div>
+
+  <div class="card">
+    <div>測試工具（僅大人使用）</div>
+    <button id="simulateBtn" style="background:#5555aa">模擬隔天搬移</button>
+  </div>
+
+  <div class="card">
+    <div>任務歷史紀錄（最近 10 筆）</div>
+    <ul id="historyList"></ul>
   </div>
 
   <script>
@@ -84,24 +77,23 @@
       "下課時有沒有同學在玩球？",
       "下課時看到有沒有同學在操場跑步？",
       "今天下課時有沒有聽到有人笑？",
-      "書包裡的課本排好順序",
-      "確認鉛筆盒裡面是不是有 6 枝鉛筆、2 塊橡皮擦、1 把尺、1 支彩虹筆。",
+      "書包裡的課本排好順序。",
+      "確認鉛筆盒裡面有沒有屬於自己的 6 枝鉛筆、2 塊橡皮擦、1 把尺、1 支彩虹筆。",
       "進教室後，小聲說『我完成任務了』。",
       "今天至少舉一次手（回答點名也算）。",
       "下課時跑三圈或走三圈操場。",
       "今天上課時認真聽，記住老師講的一句話。",
-      "放學前心裡數一數今天上了幾節課。",
+      "放學前，心裡數一數今天上了幾節課。",
       "跟隔壁的同學說『早安』。",
       "下課時跟一位同學笑一笑或揮手。",
       "問一位同學最喜歡的顏色是什麼。",
       "放學時跟一位同學說『掰掰』。",
       "下課時問同學『你要去哪裡玩？』",
-      "下課時跟同學說一句話（嗨、你好都可以）。"
+      "下課時跟同學說一句話（嗨、你好，都可以）。"
     ];
 
     const KEY_TASKS = 'hunterAssignments';
     const KEY_POINTS = 'hunterPoints';
-    const KEY_LAST_DONE = 'hunterLastDone';
 
     function loadAssignments(){
       try{ return JSON.parse(localStorage.getItem(KEY_TASKS))||{}; }catch{ return {}; }
@@ -117,37 +109,49 @@
     const xpFill = document.getElementById('xpFill');
     const xpText = document.getElementById('xpText');
     const rewardMsg = document.getElementById('rewardMsg');
-    const rewardBtn = document.getElementById('rewardBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const resetAllBtn = document.getElementById('resetAllBtn');
+    const redeemBtn = document.getElementById('redeemBtn');
+    const historyListEl = document.getElementById('historyList');
 
-    function toDateStr(d){ return d.toISOString().split('T')[0]; }
+    function isSchoolDay(d){
+      const day = d.getDay();
+      return day>=1 && day<=5; // 週一到週五
+    }
 
-    function render(){
-      const todayStr = toDateStr(new Date());
+    function moveNextToToday(){
       const a = loadAssignments();
-
-      // 如果今天還沒有任務但昨天抽了 next，則搬過來
-      if(!a[todayStr] && a['next']){
+      const todayStr = new Date().toDateString();
+      if(isSchoolDay(new Date()) && !a[todayStr] && a['next']){
         a[todayStr] = a['next'];
         delete a['next'];
         saveAssignments(a);
       }
+    }
 
-      todayTaskEl.textContent = a[todayStr] || '尚未指定';
-      nextTaskEl.textContent = a['next'] || '尚未抽籤';
+    function render(){
+      moveNextToToday();
+      const a = loadAssignments();
+      const todayStr = new Date().toDateString();
+      const today = a[todayStr];
+      todayTaskEl.textContent = today? today : '尚未指定';
+      const next = a['next'];
+      nextTaskEl.textContent = next? next : '尚未抽籤';
 
       const pts = loadPoints();
-      xpFill.style.width = (pts/5*100)+"%";
+      const percent = (pts/5)*100;
+      xpFill.style.width = percent+"%";
       xpText.textContent = pts+" / 5";
-
-      if(pts>=5){
+      if (pts>=5){
         rewardMsg.textContent = "恭喜！可以換 20 分鐘 Minecraft 🎮";
-        rewardBtn.style.display='inline-block';
+        redeemBtn.style.display = 'inline-block';
       } else {
         rewardMsg.textContent = "";
-        rewardBtn.style.display='none';
+        redeemBtn.style.display = 'none';
       }
+
+      // 任務歷史紀錄（最近 10 筆）
+      const keys = Object.keys(a).filter(k=>k!=='next').sort((x,y)=> new Date(x)-new Date(y));
+      const recent = keys.slice(-10);
+      historyListEl.innerHTML = recent.map(k=>`<li>${k}：${a[k]}</li>`).join('');
     }
 
     document.getElementById('drawBtn').onclick=()=>{
@@ -168,52 +172,35 @@
       saveAssignments(a);
       render();
     };
-
     document.getElementById('completeBtn').onclick=()=>{
-      const todayStr = toDateStr(new Date());
-      const lastDone = localStorage.getItem(KEY_LAST_DONE);
-      if(lastDone===todayStr){ alert('今天已經完成過任務囉！'); return; }
       let pts = loadPoints();
       pts++;
       savePoints(pts);
-      localStorage.setItem(KEY_LAST_DONE, todayStr);
-      showXpFloat("+1 XP");
       render();
     };
-
-    rewardBtn.onclick=()=>{
+    redeemBtn.onclick=()=>{
       let pts = loadPoints();
       if(pts>=5){
         pts -= 5;
         savePoints(pts);
-        alert('兌換成功，可以玩 20 分鐘 Minecraft！');
+        alert("已兌換 20 分鐘 Minecraft，積分扣除 5 點！");
         render();
       }
     };
 
-    resetBtn.onclick=()=>{
-      if(confirm('確定要清空積分嗎？')){
-        savePoints(0);
+    document.getElementById('simulateBtn').onclick=()=>{
+      const a = loadAssignments();
+      const todayStr = new Date().toDateString();
+      if(a['next']){
+        a[todayStr] = a['next'];
+        delete a['next'];
+        saveAssignments(a);
+        alert("模擬完成：已將下一個任務搬到今天");
         render();
+      } else {
+        alert("目前沒有下一個任務可搬移");
       }
     };
-
-    resetAllBtn.onclick=()=>{
-      if(confirm('確定要清空所有資料嗎？（任務與積分都會刪除）')){
-        localStorage.removeItem(KEY_POINTS);
-        localStorage.removeItem(KEY_TASKS);
-        localStorage.removeItem(KEY_LAST_DONE);
-        render();
-      }
-    };
-
-    function showXpFloat(text){
-      const el=document.createElement('div');
-      el.className='xp-float';
-      el.textContent=text;
-      document.body.appendChild(el);
-      setTimeout(()=>el.remove(),1000);
-    }
 
     render();
   </script>
