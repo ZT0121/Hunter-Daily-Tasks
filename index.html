@@ -160,11 +160,15 @@
       nextTaskEl.textContent = next? next : '尚未抽籤';
 
       const pts = loadPoints();
-      const percent = (pts/5)*100;
+      const rewards = Math.floor(pts / 5);  // 可兌換次數
+      const current = pts % 5;              // 當前進度
+      const percent = (current/5)*100;
+
       xpFill.style.width = percent+"%";
-      xpText.textContent = pts+" / 5";
-      if (pts>=5){
-        rewardMsg.textContent = "恭喜！可以換 20 分鐘 Minecraft 🎮";
+      xpText.textContent = current+" / 5 (可兌換 "+rewards+" 次)";
+
+      if (rewards > 0){
+        rewardMsg.textContent = "恭喜！你可以換 "+rewards+" 次 20 分鐘 Minecraft 🎮";
         redeemBtn.style.display = 'inline-block';
       } else {
         rewardMsg.textContent = "";
@@ -203,7 +207,7 @@
     };
     redeemBtn.onclick=()=>{
       let pts = loadPoints();
-      if(pts>=5){
+      if(pts >= 5){
         pts -= 5;
         savePoints(pts);
         alert("已兌換 20 分鐘 Minecraft，積分扣除 5 點！");
@@ -213,7 +217,7 @@
 
     function passwordCheck(){
       const input = prompt("請輸入密碼：");
-      return input === "0329"; // 可自行修改密碼
+      return input === "1234"; // 可自行修改密碼
     }
 
     document.getElementById('simulateBtn').onclick=()=>{
