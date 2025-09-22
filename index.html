@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <link rel="apple-touch-icon" href="avatar.png">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hunter 的每日任務</title>
@@ -14,13 +13,10 @@
     }
 
     body{
-      margin:0; 
-      font-family:"Cubic11", monospace, sans-serif;
+      margin:0; font-family:"Cubic11", monospace, sans-serif;
       background: url('background.png') no-repeat center center fixed;
       background-size: cover;
-      color:#fff; 
-      text-align:center; 
-      padding:20px;
+      color:#fff; text-align:center; padding:20px;
     }
     h1{ font-size:1.8rem; text-shadow:2px 2px #333; }
     img.avatar{
@@ -94,8 +90,9 @@
       </div>
     </div>
     <div id="rewardMsg" style="margin-top:10px; color:#ff0; font-weight:bold"></div>
-    <button id="redeemBtn" style="display:none; background:#d85">兌換 Minecraft 30 分鐘</button>
-    <button id="clearPointsBtn" class="small">清除積分</button>
+    <button id="redeemBtn" style="display:none; background:#d85">🎟️兌換 Minecraft 30 分鐘</button>
+    <button id="clearPointsBtn" class="small">⚠️清除積分</button>
+    <button id="parentAddPointBtn" class="small" style="background:#b22222; border:2px solid #700">🔒 家長加分</button>
   </div>
 
   <div class="card">
@@ -109,8 +106,18 @@
     <button id="simulateBtn" class="small">模擬隔天搬移</button>
   </div>
 
-  <!-- 先載入 tasks.js，再載入 main.js -->
   <script src="tasks.js"></script>
   <script src="main.js"></script>
+  <script>
+    // 家長加分功能
+    document.getElementById('parentAddPointBtn').onclick=()=>{
+      if(!passwordCheck()) return;
+      let pts = loadPoints();
+      pts++;
+      savePoints(pts);
+      alert("已強制加 1 分！");
+      render();
+    };
+  </script>
 </body>
 </html>
