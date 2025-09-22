@@ -1,6 +1,15 @@
 const KEY_TASKS = 'hunterAssignments';
 const KEY_POINTS = 'hunterPoints';
 
+// === 日期工具 ===
+function getDateKey(d=new Date()){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+// === LocalStorage ===
 function loadAssignments(){
   try{ return JSON.parse(localStorage.getItem(KEY_TASKS))||{}; }catch{ return {}; }
 }
@@ -8,6 +17,7 @@ function saveAssignments(a){ localStorage.setItem(KEY_TASKS, JSON.stringify(a));
 function loadPoints(){ return parseInt(localStorage.getItem(KEY_POINTS)||'0'); }
 function savePoints(p){ localStorage.setItem(KEY_POINTS, p); }
 
+// === 功能 ===
 function randomTask(){ return TASKS[Math.floor(Math.random()*TASKS.length)]; }
 
 const todayTaskEl = document.getElementById('todayTask');
@@ -28,9 +38,9 @@ function isSchoolDay(d){
 
 function moveNextToToday(){
   const a = loadAssignments();
-  const todayStr = new Date().toDateString();
-  if(isSchoolDay(new Date()) && !a[todayStr] && a['next']){
-    a[todayStr] = a['next'];
+  const todayKey = getDateKey();
+  if(isSchoolDay(new Date()) && a['next']){
+    a[todayKey] = a['next'];   // 強制搬移
     delete a['next'];
     saveAssignments(a);
   }
@@ -48,11 +58,11 @@ function formatDateStr(dateStr){
 function render(){
   moveNextToToday();
   const a = loadAssignments();
-  const todayStr = new Date().toDateString();
-  const today = a[todayStr];
+  const todayKey = getDateKey();
+  const today = a[todayKey];
   todayTaskEl.textContent = today? today : '尚未指定';
 
-  if(a['done_'+todayStr]){
+  if(a['done_'+todayKey]){
     doneMark.textContent = '✔ 今天的任務已完成 ✔';
   } else {
     doneMark.textContent = '';
@@ -78,11 +88,12 @@ function render(){
   }
 
   // 任務歷史紀錄（最近 10 筆）
-  const keys = Object.keys(a).filter(k=>k!=='next').sort((x,y)=> new Date(x)-new Date(y));
+  const keys = Object.keys(a).filter(k=>k!=='next').sort();
   const recent = keys.slice(-10);
   historyListEl.innerHTML = recent.map(k=>`<li>${formatDateStr(k)}：${a[k]}</li>`).join('');
 }
 
+// === 事件 ===
 document.getElementById('drawBtn').onclick=()=>{
   const a = loadAssignments();
   a['next'] = randomTask();
@@ -103,16 +114,16 @@ document.getElementById('clearBtn').onclick=()=>{
 };
 
 document.getElementById('completeBtn').onclick=()=>{
-  const todayStr = new Date().toDateString();
+  const todayKey = getDateKey();
   const a = loadAssignments();
-  if(a['done_'+todayStr]){
+  if(a['done_'+todayKey]){
     alert("今天的任務已經完成過了！");
     return;
   }
   let pts = loadPoints();
   pts++;
   savePoints(pts);
-  a['done_'+todayStr] = true; // 標記今天完成過
+  a['done_'+todayKey] = true; // 標記今天完成過
   saveAssignments(a);
 
   // +1 EXP 漂浮動畫
@@ -155,18 +166,28 @@ function passwordCheck(){
   return input === "0329"; // 可自行修改密碼
 }
 
-document.getElementById('simulateBtn').onclick=()=>{
+// 家長強制加分
+document.getElementById('parentAddPointBtn').onclick=()=>{
+  if(!passwordCheck()) return;
+  let pts = loadPoints();
+  pts++;
+  savePoints(pts);
+  alert("已強制加 1 分！");
+  render();
+};
+
+document.getElementById('forceMoveBtn').onclick=()=>{
   if(!passwordCheck()) return;
   const a = loadAssignments();
-  const todayStr = new Date().toDateString();
+  const todayKey = getDateKey();
   if(a['next']){
-    a[todayStr] = a['next'];
+    a[todayKey] = a['next'];
     delete a['next'];
     saveAssignments(a);
-    alert("模擬完成：已將下一個任務搬到今天");
+    alert("已強制搬移：明天的任務改成今天的任務");
     render();
   } else {
-    alert("目前沒有下一個任務可搬移");
+    alert("目前沒有明天的任務可以搬移");
   }
 };
 
